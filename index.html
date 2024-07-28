@@ -33,10 +33,9 @@
     
     // import both datasets from csv files
     d3.csv("/data/Coffee_import.csv", function(data){
-        console.log("No errors yet");
-
+        // log the data to the console
         for (var i = 0; i < data.length; i++) {
-            console.log(data[i]);
+            console.log(data.Country.trim());
         }
     
     });
