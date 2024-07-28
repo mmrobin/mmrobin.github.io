@@ -35,7 +35,7 @@
     d3.csv("/data/Coffee_import.csv", function(data){
         // log the data to the console
         for (var i = 0; i < data.length; i++) {
-            console.log(data.Country.trim());
+            console.log(data["County"].trim());
         }
     
     });
