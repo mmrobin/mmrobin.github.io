@@ -20,24 +20,192 @@
 <div class="myDiv">
     Coffee Imports and Consumption 1990 - 2019
 </div>
-<svg width="800" height="400">
 
-</svg>
+<div>
+    <svg id="chart" width="1000" height="400"></svg>
+</div>
 
+<!-- buttons to switch scenes -->
+<button id="prev">
+    Previous year
+</button>
+
+<button id="next">
+    Next year
+</button>
 
 
 <script>
+    // margins for svg canvas
+    const x_margin = 100;
+    const y_margin_bottom = 40;
+    const y_margin_top = 20;
+
+    // init visualization at year 1990
+    var current_year = 1990;
+
+    // chart width and height
+    const chart_w = 1000;
+    const chart_h = 400;
+
+    // create array for all valid years
+    var years = [];
+    for (var i = 0; i < 30; i++) {
+        years.push(1990+i);
+    }
+
+    // create array of country names
+    // these are used for axis labels
+    async function gen_countries(){
+        var country_names = [];
+        d3.csv("./data/Coffee_import.csv", function(data){
+            for (var i = 0; i < data.length; i++) {
+                country_names.push(data[i]["Country"].trim());
+            }
+        });
+
+        return country_names;
+    }
     
-    console.log("Reading from script tag now");
-    console.log("Retrieving dataset as csv");
-    
+
     // import both datasets from csv files
-    d3.csv("/data/Coffee_import.csv", function(data){
+    // returns countries as an array
+    // countries are indexed by number, so that the same data
+    // is always associated to the same country
+    async function year_data(year){
+        
+        var countries = [];
+        d3.csv("./data/Coffee_import.csv", function(data){
         // log the data to the console
         for (var i = 0; i < data.length; i++) {
-            console.log(data["County"].trim());
+            // console.log(data[i]["Country"].trim());
+            // console.log(Number(data[i][1990]));
+            countries.push(Number(data[i][year]));
+            //ninety[countries[i]] = data[i][1990];
+            }
+        });
+
+        return countries;
+    }
+
+    async function init() {
+        // initialize the graph at the beginning of the data (1990)
+        countries = await year_data(1990);
+        console.log(countries);
+
+        country_names_list = await gen_countries();
+        //console.log(country_names);
+
+        alert("Welcome to coffee visualizer!");
+
+        x_scale = d3.scaleBand()
+            .domain(await country_names_list)
+            .range([0, chart_w]);
+
+        y_scale = d3.scaleLinear()
+            .domain([0, d3.max(countries)])
+            .range([0, chart_h]);
+
+
+
+        const svg = d3.select("#chart")
+                .attr("width", chart_w + 2 * x_margin)
+                .attr("height", chart_h + y_margin_bottom + y_margin_top);
+
+        // draw geometry for data
+        svg.selectAll("rect")
+            .data(countries)
+            .enter()
+            .append("rect")
+            .attr("x", function(d, i) {return (i*chart_w)/(countries.length) + x_margin;})
+            .attr("y", function(d) {return chart_h - y_scale(d) + y_margin_bottom;})
+            .attr("width", 30)
+            .attr("height", function(d) {return y_scale(d);})
+            .attr("fill", "brown")
+            .on("mouseover", function(d, i) {
+                console.log(country_names_list[i], countries[i]);
+                d3.select(this)
+                    .transition()
+                    .duration(200)
+                    .style("fill", "tan");
+            })
+            .on("mouseout", function(d, i) {
+                d3.select(this)
+                .transition()
+                .duration(200)
+                .style("fill", "brown")
+
+            });
+
+        // render axes
+        // x axis (bottom)
+        svg.append("g")
+            .attr("id", "x_axis")
+            .attr("transform", `translate(${x_margin}, ${chart_h + y_margin_bottom})`)
+            .call(d3.axisBottom(x_scale)
+                .tickValues(x_scale.domain().filter(function(d,i){return !(i%4)}))
+        );
+        // y axis (left)
+        svg.append("g")
+            .attr("id", "y_axis")
+            .attr("transform", `translate(${x_margin}, ${y_margin_bottom})`)
+            .call(d3.axisLeft(y_scale)
+                .ticks(10, "s"));
+    }
+
+    async function change_year(year) {
+        // ensures that changing the year with console function calls
+        // changes the global variable current_year
+        if (years.includes(year)) {
+            current_year = year;
+        } else {
+            console.log('Invalid year, resetting to 1990');
+            current_year = 1990;
         }
-    
-    });
+
+        // grab the data for the appropriate year
+        countries = await year_data(year);
+        
+        alert('Year changed to ' + year);
+        
+        // transition the rects to the dataset for the appropriate year
+        d3.selectAll("rect")
+        .data(countries)
+        .transition()
+        .duration(750)
+        .attr("y", function(d) {return chart_h - y_scale(d) + y_margin_bottom;})
+        .attr("height", function(d) {return y_scale(d);});
+
+    }
+
+    // BUTTONS
+    // next button functionality (changes scene)
+    d3.select("#next")
+        .on("click", function() {
+            console.log("Click! (next)");
+            if (years.includes(current_year+1)) {
+                current_year++;
+                change_year(current_year);
+                console.log('Current year is:', current_year);
+            } else {
+                console.log('Already at max year (2019)');
+            }       
+        });
+
+    // previous button functionality (changes scene)
+    d3.select("#prev")
+        .on("click", function() {
+            console.log("Click! (previous)");
+            if (years.includes(current_year-1)) {
+                current_year--;
+                change_year(current_year);
+                console.log('Current year is:', current_year);
+            } else {
+                console.log('Already at min year (1990)');
+            }
+        });
+
+    // call the initial visualization
+    init();
 
 </script>
