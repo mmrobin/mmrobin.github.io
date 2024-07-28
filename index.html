@@ -24,4 +24,16 @@
 
 
 
-<script type="module" src="test.js"></script>
+<script src="https://d3js.org/d3.v4.min.js">
+    
+    console.log("Reading from script tag now");
+    console.log("Retrieving dataset as csv");
+    
+    // import both datasets from csv files
+    d3.csv("/data/Coffee_import.csv", function(data){
+        for (var i = 0; i < data; i++) {
+            console.log(data[i]);
+        }
+    });
+
+</script>
